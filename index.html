@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+    <script type="text/javascript" src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+    <link href='https://api.tiles.mapbox.com/mapbox.js/v1.6.4/mapbox.css' rel='stylesheet' />
+    <style>
+    html,
+    body {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+    }
+    #map {
+        width: 100%;
+        height: 100%;
+    }
+    svg {
+        position: relative;
+        height: 1000px;
+        width: 1000px;
+    }
+    circle {
+        fill: red;
+        opacity: 0.8;
+    }
+    </style>
+    <title>Mapping!</title>
+</head>
+<body>
+
+    
+    <div id="map"></div>
+
+    <script type="text/javascript">
+    
+
+    var map = L.map('map', { zoomControl: false })
+        .setView([-23.6547463,-70.397678], 14);
+    
+    L.tileLayer('http://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',{
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>'
+    }).addTo(map);
+
+
+    var svg = d3.select(map.getPanes().overlayPane).append("svg");
+
+    var g = svg.append("g").attr("class", "leaflet-zoom-hide");
+
+
+    var transform  = d3.geoTransform({
+        point: projectPoint
+    });
+
+    var d3Path = d3.geoPath().projection(transform);
+
+
+    d3.json("shortest_path.geojson").then(function (collection){
+
+        var linePaths = g.selectAll("path")
+                        .data(collection.features)
+                        .enter()
+                        .append("path")
+                        .attr("class", "line")
+                        .attr("d", d3Path)
+                        .attr("stroke", "teal")
+                        .attr("stroke-width", 1)
+                        .attr("fill", "none");
+
+        arrayPaths = []
+        linePaths.each(function (d) {
+            var thisPath = d3.select(this);
+            arrayPaths.push(thisPath);
+
+        });
+
+        g.selectAll("circle")
+            .data(arrayPaths)
+            .enter()
+            .append("circle")
+            .attr("r", 3)
+            .attr("transform", function (d) {
+                var p = d.node().getPointAtLength(0);
+                return "translate(" + p.x + ", " + p.y + ")";
+            });
+
+
+
+        g.selectAll("circle")
+            .transition()
+            .ease(d3.easeLinear)
+            .duration(10000)
+            .attrTween("transform", function (d){
+
+                return function (t) {
+                    var pathLength = d.node().getTotalLength();
+                    var p = d.node().getPointAtLength(t * pathLength);
+                return "translate(" + p.x + ", " + p.y + ")";
+                }
+                
+            })
+
+                        
+
+        
+    });
+
+    function projectPoint(x, y) {
+            var point = map.latLngToLayerPoint(new L.LatLng(y, x));
+            this.stream.point(point.x, point.y);
+    } 
+    
+    function applyLatLngToLayer (d) {
+        var x = d[0];
+        var y = d[1];
+
+        return map.latLngToLayerPoint(new L.LatLng(y, x));
+
+    }
+    
+    </script>
+</body>
+</html>

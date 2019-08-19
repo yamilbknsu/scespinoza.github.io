@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script type="text/javascript" src="https://d3js.org/d3.v5.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <script type="text/javascript">
+        
+        var h = 500;
+        var w = 900;
+        var padding = 10;
+
+        
+
+        var svg = d3.select("body")
+                    .append("svg")
+                    .attr("height", h)
+                    .attr("width", w);
+
+        var projection = d3.geoEquirectangular();
+
+        var geoGenerator = d3.geoPath().projection(projection);
+
+        d3.json("shortest_path.geojson").then(function (collection) {
+            var points = collection.features[4].geometry.coordinates;
+
+            var xScale = d3.scaleLinear()
+                        .domain([
+                            d3.min(points, function (d){
+                                return d[1];
+                            }),
+                            d3.max(points, function (d){
+                                return d[1];
+                            })
+                        ])
+                        .range([padding, w - padding])
+
+            
+            var yScale = d3.scaleLinear()
+                        .domain([
+                            d3.min(points, function (d){
+                                return d[0];
+                            }),
+                            d3.max(points, function (d){
+                                return d[0];
+                            })
+                        ])
+                        .range([padding, h - padding])
+
+            console.log(geoGenerator(collection));
+            var line = d3.line()        
+                .x(function(d) { return xScale(d[1]); })
+                .y(function(d) { return yScale(d[0]); });
+
+            var path = svg.append("path")
+                .datum(points)
+                .attr("class", "line")
+                .attr("d", line)
+                .attr("fill", "none")
+                .attr("stroke", "#3A8776");
+
+
+            var pathLength = path.node().getTotalLength();
+
+            console.log(path);
+            var delays = [[200, 150], [1201, 300], [1233, 100], [2112, 200], [4124, 301] , [3124, 400] , [124, 317] ,[14, 310]]
+            
+            svg.selectAll("circle")
+                    .data(delays)
+                    .enter()
+                    .append("circle")
+                    .attr("r", 10)
+                    .attr("fill", "rgba(4, 207, 68, 0.8)")
+                    .attr("transform", function () {
+                        var p = path.node().getPointAtLength(0);
+                        return "translate(" + [p.x, p.y] + ")";
+                    });
+
+            svg.selectAll('circle')
+                    
+                    .transition()
+                    .ease(d3.easeLinear)
+                    .delay(function (d){return d[0];})
+                    .duration(function (d){return d[1] * 90})
+                    .attrTween("transform", function (d, i){
+                        return function (t) {
+                            var p = path.node().getPointAtLength(pathLength * t);
+                            return "translate(" + [p.x, p.y] + ")";
+                        }
+                    });
+
+            
+
+            
+
+
+            
+        })
+        
+        
+        
+        </script>
+</body>
+</html>
