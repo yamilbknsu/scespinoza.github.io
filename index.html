@@ -26,7 +26,10 @@
     }
     circle {
         fill: red;
-        opacity: 0.8;
+        opacity: 0.5;
+    }
+    path {
+        opacity: 0.5;
     }
     </style>
     <title>Antofagasta Animation</title>
@@ -40,7 +43,7 @@
     
 
     var map = L.map('map', { zoomControl: false })
-        .setView([-23.6547463,-70.397678], 14);
+        .setView([-23.6482669,-70.3993238], 15);
     
     L.tileLayer('http://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',{
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>'
@@ -61,6 +64,7 @@
 
     d3.json("shortest_path.geojson").then(function (collection){
 
+        // append paths
         var linePaths = g.selectAll("path")
                         .data(collection.features)
                         .enter()
@@ -68,32 +72,34 @@
                         .attr("class", "line")
                         .attr("d", d3Path)
                         .attr("stroke", "teal")
-                        .attr("stroke-width", 1)
+                        .attr("stroke-width", 5)
                         .attr("fill", "none");
 
         arrayPaths = []
+
         linePaths.each(function (d) {
             var thisPath = d3.select(this);
             arrayPaths.push(thisPath);
 
         });
 
-        g.selectAll("circle")
+        circles = g.selectAll("circle")
             .data(arrayPaths)
             .enter()
             .append("circle")
-            .attr("r", 3)
+            .attr("r", 5)
             .attr("transform", function (d) {
                 var p = d.node().getPointAtLength(0);
                 return "translate(" + p.x + ", " + p.y + ")";
             });
 
-
+        delays = [100, 1231, 512, 3123, 1231, 1231, 1251, 24, 0, 1352]
 
         g.selectAll("circle")
             .transition()
             .ease(d3.easeLinear)
-            .duration(10000)
+            .delay(function (d, i){ return delays[i];})
+            .duration(5000)
             .attrTween("transform", function (d){
 
                 return function (t) {
@@ -102,7 +108,19 @@
                 return "translate(" + p.x + ", " + p.y + ")";
                 }
                 
-            })
+            });
+        map.on("viewreset", reset);
+        
+        function reset(){
+            var bounds = d3Path.bounds(collection),
+                topLeft = bounds[0],
+                bottomRight = bounds[1];
+
+            linePaths.attr("d", d3Path)
+
+            
+            
+        }
 
                         
 
